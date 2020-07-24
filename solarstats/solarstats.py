@@ -2,7 +2,7 @@
 # This script reads out basic solar panel statistics from inverters.
 # Currently the following inverters are  supported:
 # * BlacklineSolar 3000
-# * Mastervolt Soladin 600
+# * Mainvolt Soladin 600
 
 # FIXME: Modularise: main() report()
 
@@ -18,7 +18,7 @@ import serial   # Serial port communication
 import sqlite3  # Database connection
 
 # Import custom modules
-import blacklinesolar, mastervolt, solarutils
+import blacklinesolar, mainvolt, solarutils
 
 
 # Program data
@@ -35,7 +35,7 @@ retries        = 3          # Number of times to retry (on failure) before givin
 
 def parse_args():
     """ Parse command line arguments (http://docs.python.org/2/library/argparse.html#the-add-argument-method) """
-    parser = argparse.ArgumentParser(description='Read and store data from the inverters attached to the device (currently the BlackLine Solar 3000 and MasterVolt Soladin 600)')
+    parser = argparse.ArgumentParser(description='Read and store data from the inverters attached to the device (currently the BlackLine Solar 3000 and MainVolt Soladin 600)')
     parser.add_argument('-c', '--create', action='store_true', help='Creates and initialises the SQLite and RRDtool databases')
     parser.add_argument('-g', '--graph', action='store_true', help='Draws the RRDtool graphs')
     parser.add_argument('-e', '--export', metavar='inverterID', help='Export the SQLite inverter power/ data of the selected inverter')
@@ -239,12 +239,12 @@ def create_databases():
     # Expected response: FF 03 02 00 02 10 51
 
     logging.info("Bus query response (data): %s", printhex(rData))
-    logging.info("Using this response as slave address: %s", printhex(rData[1]))
-    slaveAddress = rData[1].encode('hex')
+    logging.info("Using this response as subordinate address: %s", printhex(rData[1]))
+    subordinateAddress = rData[1].encode('hex')
 
     # Query serial number
     logging.debug("Sending serial number query ADU")
-    send_command(serPort, self.bls.serialNumberCommand(slaveAddress))
+    send_command(serPort, self.bls.serialNumberCommand(subordinateAddress))
     bytes = receive_command(serPort)
     rAddress, rCommand, rByteCount, rData = self.bls.mb_parseResponse(bytes)
     # Expected response: 02 04 06 42 06 12 43 50 30 3B F9
@@ -253,7 +253,7 @@ def create_databases():
 
     # Query model / software version command
     logging.debug("Sending model/software command ADU")
-    send_command(serPort, self.bls.modelSWCommand(slaveAddress))
+    send_command(serPort, self.bls.modelSWCommand(subordinateAddress))
     bytes = receive_command(serPort)
     rAddress, rCommand, rByteCount, rData = self.bls.mb_parseResponse(bytes)
     # Expected response: 02 04 04 00 1E 01 F7 E8 94
@@ -271,10 +271,10 @@ def create_databases():
     conn.commit()
     logging.info('Committed serial number "%s" to database', serialNumber)
 
-    t = ('1', 'KLNE', model, slaveAddress, swVersion, '3000W')
+    t = ('1', 'KLNE', model, subordinateAddress, swVersion, '3000W')
     cursor.execute("INSERT INTO invertertype VALUES (?,?,?,?,?,?)", t)
     conn.commit()
-    logging.info('Committed model "%s", slave address "%s", software version "%s" to database', model, slaveAddress, swVersion)
+    logging.info('Committed model "%s", subordinate address "%s", software version "%s" to database', model, subordinateAddress, swVersion)
     conn.close()
     logging.debug('Closed connection to database')
 
@@ -295,12 +295,12 @@ def create_databases():
     dest, src, response = self.sol.mv_parseResponse(bytes, mvCmd_probe)
     # Expected response: 00 00 11 00 C1 F3 00 00 C5
     logging.info("Soladin response (source address): %s", printhex(src))
-    logging.info("Using this value as slave address: %s", printhex(src))
-    slaveAddress = printhex(src)
+    logging.info("Using this value as subordinate address: %s", printhex(src))
+    subordinateAddress = printhex(src)
 
     # Query firmware number ("11 00 00 00 B4 00 00 00 C5")
     logging.debug("Sending firmware info/date")
-    send_command(serPort, self.sol.serialNumberCommand(slaveAddress))
+    send_command(serPort, self.sol.serialNumberCommand(subordinateAddress))
     bytes = receive_command(serPort)
     dest, src, response = mv_parseResponse(bytes, mvCmd_firmware)
     # Expected response:
@@ -322,10 +322,10 @@ def create_databases():
     logging.info('Committed serial number "%s" to database', swVersion)
 
     model = '600'
-    t = ('2', 'Soladin', model, slaveAddress, swVersion, '600W')
+    t = ('2', 'Soladin', model, subordinateAddress, swVersion, '600W')
     cursor.execute("INSERT INTO invertertype VALUES (?,?,?,?,?,?)", t)
     conn.commit()
-    logging.info('Committed model "%s", slave address "%s", software version "%s" to database', model, slaveAddress, swVersion)
+    logging.info('Committed model "%s", subordinate address "%s", software version "%s" to database', model, subordinateAddress, swVersion)
     conn.close()
     logging.debug('Closed connection to database')
 
@@ -380,9 +380,9 @@ def test_inverter():
     if serPort is None:
         print "%s : Cannot open serial port USB1..." % (datetime.datetime.now())
 
-    slaveAddress = "11 00"
+    subordinateAddress = "11 00"
     sourceAddress = "00 00"
-    command = mv_generateCommand(slaveAddress, sourceAddress, mvCmd_stats)
+    command = mv_generateCommand(subordinateAddress, sourceAddress, mvCmd_stats)
     send_command(serPort, command)
     #bytes = serPort.readline()
     bytes = receive_command(serPort)
@@ -394,21 +394,21 @@ def test_inverter():
 """
 #These are the remaining BLS registers
 
-    slaveAddress = "02"
+    subordinateAddress = "02"
     # 02 04 00 29 00 1F 60 39
     print "Querying input register 0x29 - 0x47"
     startRegister = "29"
     numRegisters = "1F"
-    queryPrintRegister(serPort, slaveAddress, startRegister, numRegisters)
+    queryPrintRegister(serPort, subordinateAddress, startRegister, numRegisters)
 
     # 02 04 00 3A 00 17 90 3A
     print "Querying input register 0x3A - 0x50"
     startRegister = "3A"
     numRegisters = "17"
-    queryPrintRegister(serPort, slaveAddress, startRegister, numRegisters)
+    queryPrintRegister(serPort, subordinateAddress, startRegister, numRegisters)
 
-def queryPrintRegister(serPort, slaveAddress, startRegister, numRegisters):
-    command = mb_ReadInputRegisters(slaveAddress, startRegister, numRegisters)
+def queryPrintRegister(serPort, subordinateAddress, startRegister, numRegisters):
+    command = mb_ReadInputRegisters(subordinateAddress, startRegister, numRegisters)
     send_command(serPort, command)
     bytes = receive_command(serPort)
     rAddress, rCommand, rByteCount, rData = mb_parseResponse(bytes)
@@ -436,7 +436,7 @@ if __name__=="__main__":
 
     # Create inverter instances
     bls = blacklinesolar.BlackLineSolar()
-    sol = mastervolt.MasterVolt()
+    sol = mainvolt.MainVolt()
 
     args = parse_args()
 
@@ -481,13 +481,13 @@ if __name__=="__main__":
     if serPort is None:
         print "%s : Cannot open serial port USB0..." % (datetime.datetime.now())
 
-    # Retrieve slave address from db
+    # Retrieve subordinate address from db
     t = ('1')
     cursor.execute('SELECT BusAddress FROM invertertype WHERE ID=?', t)
-    slaveAddress = cursor.fetchone()[0]
-    logging.info('Using slave addres "%s" from db', printhex(slaveAddress))
-    if slaveAddress is None:
-        print "%s : Cannot read slave address..." % (datetime.datetime.now())
+    subordinateAddress = cursor.fetchone()[0]
+    logging.info('Using subordinate addres "%s" from db', printhex(subordinateAddress))
+    if subordinateAddress is None:
+        print "%s : Cannot read subordinate address..." % (datetime.datetime.now())
 
     resultsBLS = {}
     resultsBLS['name'] = "BLS3000"
@@ -503,7 +503,7 @@ if __name__=="__main__":
         logging.debug("Sending inverter data request ADU")
         startRegister = "0A"
         numRegisters = "1F"
-        command = mb_ReadInputRegisters(slaveAddress, startRegister, numRegisters)
+        command = mb_ReadInputRegisters(subordinateAddress, startRegister, numRegisters)
         send_command(serPort, command)
         bytes = receive_command(serPort)
 
@@ -580,13 +580,13 @@ if __name__=="__main__":
     if serPort is None:
         print "%s : Cannot open serial port USB1..." % (datetime.datetime.now())
 
-    # Retrieve slave address from db
+    # Retrieve subordinate address from db
     t = ('2')
     cursor.execute('SELECT BusAddress FROM invertertype WHERE ID=?', t)
-    slaveAddress = cursor.fetchone()[0]
-    logging.info('Using slave addres "%s" from db', printhex(slaveAddress))
-    if slaveAddress is None:
-        print "%s : Cannot read slave address..." % (datetime.datetime.now())
+    subordinateAddress = cursor.fetchone()[0]
+    logging.info('Using subordinate addres "%s" from db', printhex(subordinateAddress))
+    if subordinateAddress is None:
+        print "%s : Cannot read subordinate address..." % (datetime.datetime.now())
 
     retries = 3
     sourceAddress = "00 00"
@@ -598,7 +598,7 @@ if __name__=="__main__":
             logging.error("No serial port available, aborting data query...")
             retries = 0
             continue
-        command = mv_generateCommand(slaveAddress, sourceAddress, mvCmd_stats)
+        command = mv_generateCommand(subordinateAddress, sourceAddress, mvCmd_stats)
         send_command(serPort, command)
         bytes = receive_command(serPort)
         dest, src, response = mv_parseResponse(bytes, mvCmd_stats)
@@ -679,7 +679,7 @@ if __name__=="__main__":
         print "Runtime:\t" + str(hTot)
         """
 
-        command = mv_generateCommand(slaveAddress, sourceAddress, mvCmd_maxpow)
+        command = mv_generateCommand(subordinateAddress, sourceAddress, mvCmd_maxpow)
         send_command(serPort, command)
         bytes = receive_command(serPort)
         dest, src, response2 = mv_parseResponse(bytes, mvCmd_maxpow)
@@ -697,7 +697,7 @@ if __name__=="__main__":
         mPow = hex2int(response2[19:21]) / 1.0
         # print "MaxPow:\t" + str(mPow)
 
-        command = mv_generateCommand(slaveAddress, sourceAddress, mvCmd_hisdat)
+        command = mv_generateCommand(subordinateAddress, sourceAddress, mvCmd_hisdat)
         send_command(serPort, command)
         bytes = receive_command(serPort)
         dest, src, response3 = mv_parseResponse(bytes, mvCmd_hisdat)

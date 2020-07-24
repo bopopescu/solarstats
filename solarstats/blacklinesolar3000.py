@@ -84,21 +84,21 @@ class BlackLineSolar:
         return struct.pack('<H', register)
 
     # Generic Read [Holding|Input] Register command (valid for 0x03, 0x04) as per ModBus protocol
-    def mb_readRegister(self, slaveAddress, functionCode, startRegister, numRegisters):
+    def mb_readRegister(self, subordinateAddress, functionCode, startRegister, numRegisters):
         pdu = functionCode + startRegister.zfill(4).decode('hex') + numRegisters.zfill(4).decode('hex')
-        adu = slaveAddress.decode('hex') + pdu + self.calculateModbusCrc(slaveAddress.decode('hex') + pdu)
+        adu = subordinateAddress.decode('hex') + pdu + self.calculateModbusCrc(subordinateAddress.decode('hex') + pdu)
         logging.debug("Command generated: %s ", self.su.printhex(adu))
         return adu
 
     # Generates the Read Holding Registers command (0x03) as per ModBus protocol
-    def mb_readHoldingRegisters(self, slaveAddress, startRegister, numRegisters):
+    def mb_readHoldingRegisters(self, subordinateAddress, startRegister, numRegisters):
         functionCode = self.read_holding_register
-        return self.mb_readRegister(slaveAddress, functionCode, startRegister, numRegisters)
+        return self.mb_readRegister(subordinateAddress, functionCode, startRegister, numRegisters)
 
     # Generates the Read Input Registers command (0x04) as per ModBus protocol
-    def mb_readInputRegisters(self, slaveAddress, startRegister, numRegisters):
+    def mb_readInputRegisters(self, subordinateAddress, startRegister, numRegisters):
         functionCode = self.read_input_register
-        return self.mb_readRegister(slaveAddress, functionCode, startRegister, numRegisters)
+        return self.mb_readRegister(subordinateAddress, functionCode, startRegister, numRegisters)
 
     # Parse response of BLS inverter as per ModBus protocol
     def mb_parseResponse(self, response):
@@ -127,22 +127,22 @@ class BlackLineSolar:
 
     # Generate busQuery command ("FF 03 00 3C 00 01 51 D8")
     def busQueryCommand(self):
-        slaveAddress = "FF"
+        subordinateAddress = "FF"
         startRegister = "3C"
         numRegisters = "01"
-        return self.mb_readHoldingRegisters(slaveAddress, startRegister, numRegisters)
+        return self.mb_readHoldingRegisters(subordinateAddress, startRegister, numRegisters)
 
     # Generate serial number query ("02 04 00 00 00 03 B0 38")
-    def serialNumberCommand(self, slaveAddress):
+    def serialNumberCommand(self, subordinateAddress):
         startRegister = "00"
         numRegisters = "03"
-        return self.mb_readInputRegisters(slaveAddress, startRegister, numRegisters)
+        return self.mb_readInputRegisters(subordinateAddress, startRegister, numRegisters)
 
     # Query model / software version command ("02 04 00 2B 00 02 01 F0")
-    def modelSWCommand(self, slaveAddress):
+    def modelSWCommand(self, subordinateAddress):
         startRegister = "2B"
         numRegisters = "02"
-        return self.mb_readInputRegisters(slaveAddress, startRegister, numRegisters)
+        return self.mb_readInputRegisters(subordinateAddress, startRegister, numRegisters)
 
 
 """
@@ -150,7 +150,7 @@ class BlackLineSolar:
 BLS decoding
 ===
 Commands
-  SA =slaveAddress; FC=functionCode SR=startRegister, NR=numRegisters CR=crc
+  SA =subordinateAddress; FC=functionCode SR=startRegister, NR=numRegisters CR=crc
   SA FC SR SR NR NR CR CR
   02 03 00 26 00 17 E4 3C
   FF 03 00 3C 00 01 51 D8 - busQuery

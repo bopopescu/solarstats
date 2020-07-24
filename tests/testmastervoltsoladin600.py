@@ -1,12 +1,12 @@
 #! /usr/bin/python
 
 import unittest
-from solarstats import mastervoltsoladin600
+from solarstats import mainvoltsoladin600
 
-class TestMastervolt(unittest.TestCase):
+class TestMainvolt(unittest.TestCase):
 
     def setUp(self):
-        self.mv = mastervoltsoladin600.MasterVolt()
+        self.mv = mainvoltsoladin600.MainVolt()
 
     def test_calcCRC(self):
         self.assertEqual(self.mv.calcCRC("\xFF"), "\x00")
@@ -19,14 +19,14 @@ class TestMastervolt(unittest.TestCase):
         self.assertNotEqual(self.mv.calcCRC("\x00\x00\x00\x00\x00\x00\x00\x00"), "\x01")
 
     def test_generateCommand(self):
-        slaveAddress   = "00 00"
+        subordinateAddress   = "00 00"
         sourceAddress = "00 00"
-        self.assertEqual(self.mv.generateCommand(slaveAddress, sourceAddress, self.mv.mvCmd_probe), "\x00\x00\x00\x00\xC1\x00\x00\x00\xC1")
+        self.assertEqual(self.mv.generateCommand(subordinateAddress, sourceAddress, self.mv.mvCmd_probe), "\x00\x00\x00\x00\xC1\x00\x00\x00\xC1")
 
-        slaveAddress = "11 00"
-        self.assertEqual(self.mv.generateCommand(slaveAddress, sourceAddress, self.mv.mvCmd_firmware), "\x11\x00\x00\x00\xB4\x00\x00\x00\xC5")
+        subordinateAddress = "11 00"
+        self.assertEqual(self.mv.generateCommand(subordinateAddress, sourceAddress, self.mv.mvCmd_firmware), "\x11\x00\x00\x00\xB4\x00\x00\x00\xC5")
         
-        self.assertEqual(self.mv.generateCommand(slaveAddress, sourceAddress, self.mv.mvCmd_resmax), "\x11\x00\x00\x00\x97\x01\x00\x00\xA9")
+        self.assertEqual(self.mv.generateCommand(subordinateAddress, sourceAddress, self.mv.mvCmd_resmax), "\x11\x00\x00\x00\x97\x01\x00\x00\xA9")
         
         
     def test_responseLength(self):
@@ -49,10 +49,10 @@ class TestMastervolt(unittest.TestCase):
         self.assertEqual(self.mv.busQueryCommand(), "\x00\x00\x00\x00\xC1\x00\x00\x00\xC1")
         
     def test_serialNumberQuery(self):
-        slaveAddress = "11 00"
-        self.assertEqual(self.mv.serialNumberCommand(slaveAddress), "\x11\x00\x00\x00\xB4\x00\x00\x00\xC5")
+        subordinateAddress = "11 00"
+        self.assertEqual(self.mv.serialNumberCommand(subordinateAddress), "\x11\x00\x00\x00\xB4\x00\x00\x00\xC5")
 
     @unittest.skip("Method not implemented yet")
     def test_modelSWCommand(self):
-        slaveAddress = "11 00"
-        self.assertEqual(self.mv.modelSWCommand(slaveAddress), "")
+        subordinateAddress = "11 00"
+        self.assertEqual(self.mv.modelSWCommand(subordinateAddress), "")

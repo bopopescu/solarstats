@@ -2,9 +2,9 @@ import logging  # General logging
 import struct   # Used in the CRC calculation
 import solarutils
 
-class MasterVolt:
+class MainVolt:
     def __init__(self):
-        # Basic Mastervolt commands
+        # Basic Mainvolt commands
         self.mvCmd_probe    = "\xC1"
         self.mvCmd_firmware = "\xB4"
         self.mvCmd_stats    = "\xB6"
@@ -23,11 +23,11 @@ class MasterVolt:
         return chr(crc)
 
     # Generates a command to send to the Soladin600
-    def generateCommand(self, sourceAddress, slaveAddress, cmd):
+    def generateCommand(self, sourceAddress, subordinateAddress, cmd):
         filler = self.su.hexify('00 00 00')
         if cmd == '\x97':
             filler = self.su.hexify('01 00 00')
-        command = self.su.hexify(sourceAddress) + self.su.hexify(slaveAddress) + cmd + filler
+        command = self.su.hexify(sourceAddress) + self.su.hexify(subordinateAddress) + cmd + filler
         command = command + self.calcCRC(command)
         return command
 
@@ -73,17 +73,17 @@ class MasterVolt:
 
     # Generate busQuery command ("00 00 00 00 C1 00 00 00 C1")
     def busQueryCommand(self):
-        slaveAddress   = "00 00"
+        subordinateAddress   = "00 00"
         sourceAddress = "00 00"
-        return self.generateCommand(slaveAddress, sourceAddress, self.mvCmd_probe)
+        return self.generateCommand(subordinateAddress, sourceAddress, self.mvCmd_probe)
 
     # Query firmware number ("11 00 00 00 B4 00 00 00 C5")
-    def serialNumberCommand(self, slaveAddress):
+    def serialNumberCommand(self, subordinateAddress):
         sourceAddress = "00 00"
-        return self.generateCommand(slaveAddress, sourceAddress, self.mvCmd_firmware)
+        return self.generateCommand(subordinateAddress, sourceAddress, self.mvCmd_firmware)
 
     # FIXME: Provide a response for this command
-    def modelSWCommand(self, slaveAddress):
+    def modelSWCommand(self, subordinateAddress):
         pass
 
 """
